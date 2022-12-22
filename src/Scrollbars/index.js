@@ -8,6 +8,7 @@ import getScrollbarWidth from '../utils/getScrollbarWidth';
 import returnFalse from '../utils/returnFalse';
 import getInnerWidth from '../utils/getInnerWidth';
 import getInnerHeight from '../utils/getInnerHeight';
+import banKeyboardPage from '../utils/banKeyboardPage';
 
 import {
     containerStyleDefault,
@@ -67,7 +68,8 @@ export default class Scrollbars extends Component {
         this.handleDragEnd = this.handleDragEnd.bind(this);
 
         this.state = {
-            didMountUniversal: false
+            didMountUniversal: false,
+            removeBanKeyboardPage: null,
         };
     }
 
@@ -75,6 +77,7 @@ export default class Scrollbars extends Component {
         this.addListeners();
         this.update();
         this.componentDidMountUniversal();
+        this.componentDidBanKeyboardPage()
     }
 
     componentDidMountUniversal() { // eslint-disable-line react/sort-comp
@@ -87,8 +90,17 @@ export default class Scrollbars extends Component {
         this.update();
     }
 
+    componentDidBanKeyboardPage() {
+        const { isBanKeyboardPage } = this.props;
+        if (!isBanKeyboardPage || !this.view) return;
+        const viewTag = `scrollbar-tag-${Math.random().toString().slice(-6)}`;
+        this.view.setAttribute('tag', viewTag);
+        banKeyboardPage.call(this, viewTag);
+    }
+
     componentWillUnmount() {
         this.removeListeners();
+        this.removeBanKeyboardPageListener();
         caf(this.requestFrame);
         clearTimeout(this.hideTracksTimeout);
         clearInterval(this.detectScrollingInterval);
@@ -244,6 +256,12 @@ export default class Scrollbars extends Component {
         window.removeEventListener('resize', this.handleWindowResize);
         // Possibly setup by `handleDragStart`
         this.teardownDragging();
+    }
+
+    removeBanKeyboardPageListener() {
+        const { removeBanKeyboardPage } = this.state;
+        if(typeof removeBanKeyboardPage !== 'function') return;
+        removeBanKeyboardPage();
     }
 
     handleScroll(event) {
@@ -623,6 +641,7 @@ Scrollbars.propTypes = {
         PropTypes.string
     ]),
     universal: PropTypes.bool,
+    isBanKeyboardPage: PropTypes.bool,
     style: PropTypes.object,
     children: PropTypes.node,
 };
@@ -643,4 +662,5 @@ Scrollbars.defaultProps = {
     autoHeightMin: 0,
     autoHeightMax: 200,
     universal: false,
+    isBanKeyboardPage: false,
 };
